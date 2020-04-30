@@ -3,24 +3,21 @@ package com.example.mvvmbox.view
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
 import com.example.mvvmbox.R
 import com.example.mvvmbox.RvAdapter
 import com.example.mvvmbox.viewModel.SearchViewModel
 import kotlinx.android.synthetic.main.activity_search.*
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class SearchActivity : AppCompatActivity() {
 
-    private lateinit var viewModel: SearchViewModel
+    private val viewModel: SearchViewModel by viewModel() //Koin 提供的初始化(省略注入參數)
     private lateinit var adapter: RvAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
-
-        viewModel = ViewModelProvider(this).get(SearchViewModel::class.java)
 
         searchImageV.setOnClickListener {
             if(searchEdit.text!!.isNotEmpty()) {
@@ -37,7 +34,7 @@ class SearchActivity : AppCompatActivity() {
         })
 
         viewModel.locationList.observe(this, Observer {
-            adapter.addlist(it)
+            adapter.addList(it)
         })
 
         adapter = RvAdapter()

@@ -1,27 +1,57 @@
 package com.example.mvvmbox.viewModel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import com.example.mvvmbox.netWork.model.LocationItem
-import com.example.mvvmbox.repository.SearchRepository
+import android.util.Log
+import androidx.lifecycle.*
+import com.example.mvvmbox.netWork.items.LocationItem
+import com.example.mvvmbox.repository.ModelRepository
+import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
-class SearchViewModel(application: Application)  : AndroidViewModel(application){
+class SearchViewModel(private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) :
+    ViewModel() {
 
-    private val repository = SearchRepository(application)
-    val showProgress : LiveData<Boolean>
-    val locationList : LiveData<MutableList<LocationItem>>
+    private val repository = ModelRepository()
 
-    init {
-        this.showProgress = repository.showProgress
-        locationList = repository.locationList
-    }
+    private val _showProgress = MutableLiveData<Boolean>()  // VM 內部的 result
+    val showProgress: LiveData<Boolean> = _showProgress   //提供View 監視(Observer) 的接口
 
-    fun changState(){
-        repository.changState()
-    }
+    private val _locationList = MutableLiveData<List<LocationItem>>()  // VM 內部的 result
+    val locationList: LiveData<List<LocationItem>> = _locationList  //提供View 監視(Observer) 的接口
 
-    fun searchLocation(searchString : String){
-        repository.searchLocation(searchString)
+    fun searchLocation(searchString: String) {
+
+        viewModelScope.launch {
+
+            _showProgress.value = true
+            val service = repository.getAPI()
+
+            withContext(ioDispatcher) {
+                service.getLocation(searchString)
+                    .enqueue(object : Callback<MutableList<LocationItem>> {
+                        override fun onFailure(
+                            call: Call<MutableList<LocationItem>>,
+                            t: Throwable
+                        ) {
+                            _showProgress.value = false
+                            t.printStackTrace()
+                        }
+
+                        override fun onResponse(
+                            call: Call<MutableList<LocationItem>>,
+                            response: Response<MutableList<LocationItem>>
+                        ) {
+                            Log.d("TAG", Gson().toJson(response.body()))
+                            _locationList.value = response.body()
+                            _showProgress.value = false
+                        }
+                    })
+            }
+        }
     }
 }

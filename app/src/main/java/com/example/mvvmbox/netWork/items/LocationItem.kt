@@ -1,4 +1,4 @@
-package com.example.mvvmbox.netWork.model
+package com.example.mvvmbox.netWork.items
 
 class LocationItem(
     val latt_long: String,
